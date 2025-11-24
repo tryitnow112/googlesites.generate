@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Sites Portfolio Generator (Beta)</title>
+    <!-- Fonts: Roboto for the "Fake" part, Pacifico for the Party part -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Pacifico&family=Poppins:wght@600&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        googleBlue: '#1a73e8',
+                        googleGray: '#f1f3f4',
+                    },
+                    fontFamily: {
+                        'sans': ['Roboto', 'sans-serif'],
+                        'party': ['Pacifico', 'cursive'],
+                        'pop': ['Poppins', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* The Party Background (Hidden initially) */
+        .party-mode {
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+        }
+
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #1a73e8;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Smooth fade transition */
+        .fade-out {
+            opacity: 0;
+            transition: opacity 0.5s ease-out;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body id="main-body" class="bg-white text-gray-800 transition-colors duration-1000">
+
+    <!-- ==========================
+         PHASE 1: THE FAKE TOOL 
+         ========================== -->
+    <div id="fake-interface" class="flex flex-col min-h-screen">
+        
+        <!-- Fake Navbar -->
+        <nav class="border-b border-gray-200 px-6 py-4 flex items-center gap-2">
+            <!-- Google-ish Icon -->
+            <div class="w-8 h-8 bg-blue-600 rounded flex items-center justify-center text-white font-bold text-xl">G</div>
+            <span class="text-gray-600 text-lg font-medium">Sites Portfolio Wizard <span class="text-xs bg-gray-200 px-2 py-0.5 rounded text-gray-500 uppercase tracking-wider ml-2">Beta</span></span>
+            <div class="ml-auto flex gap-4 text-sm text-gray-500">
+                <span>Templates</span>
+                <span>Docs</span>
+                <span>Help</span>
+                <div class="w-8 h-8 bg-purple-600 rounded-full text-white flex items-center justify-center text-xs">U</div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="flex-grow flex flex-col items-center justify-center p-4 bg-gray-50">
+            <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-lg border border-gray-200">
+                
+                <h1 class="text-2xl font-normal text-gray-800 mb-2">Create your professional presence</h1>
+                <p class="text-gray-500 mb-8 text-sm">AI-powered generation for Google Sites portfolios.</p>
+
+                <!-- Form -->
+                <div class="space-y-6">
+                    <!-- Question 1 -->
+                    <div class="flex flex-col gap-2">
+                        <label class="text-sm font-medium text-gray-700">What do you want to create?</label>
+                        <select id="type-select" class="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white">
+                            <option value="" disabled selected>Select an option...</option>
+                            <option value="portfolio">Professional Portfolio</option>
+                            <option value="website">Personal Website</option>
+                            <option value="landing">Project Landing Page</option>
+                        </select>
+                    </div>
+
+                    <!-- Question 2 -->
+                    <div class="flex flex-col gap-2">
+                        <label class="text-sm font-medium text-gray-700">What is your major/field?</label>
+                        <select id="major-select" class="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white">
+                            <option value="" disabled selected>Select your field...</option>
+                            <option value="marketing">Marketing & Communications</option>
+                            <option value="medicine">Medicine & Health Sciences</option>
+                            <option value="business">Business Administration</option>
+                            <option value="engineering">Engineering</option>
+                            <option value="arts">Arts & Design</option>
+                        </select>
+                    </div>
+
+                    <!-- Generate Button -->
+                    <button onclick="startPrank()" class="w-full bg-googleBlue hover:bg-blue-700 text-white font-medium py-3 px-4 rounded transition-colors shadow-sm flex justify-center items-center gap-2 mt-4">
+                        <span id="btn-text">Generate My Google Site</span>
+                    </button>
+                    
+                    <p class="text-xs text-gray-400 text-center mt-4">
+                        By clicking Generate, you agree to the Terms of Service. <br>Estimated generation time: ~5 seconds.
+                    </p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ==========================
+         PHASE 2: LOADING MODAL
+         ========================== -->
+    <div id="loading-overlay" class="fixed inset-0 bg-white/90 z-50 hidden flex-col items-center justify-center">
+        <div class="loader mb-4"></div>
+        <h2 class="text-xl font-medium text-gray-700" id="loading-text">Connecting to Google API...</h2>
+        <div class="w-64 h-2 bg-gray-200 rounded-full mt-4 overflow-hidden">
+            <div id="progress-bar" class="h-full bg-blue-600 w-0 transition-all duration-[3000ms] ease-out"></div>
+        </div>
+    </div>
+
+    <!-- ==========================
+         PHASE 3: THE REVEAL
+         ========================== -->
+    <div id="birthday-screen" class="fixed inset-0 z-50 hidden flex-col items-center justify-center text-center p-4">
+        
+        <h1 class="text-6xl md:text-8xl font-party text-white drop-shadow-lg mb-8 scale-0 transition-transform duration-500" id="bday-text">
+            Happy Birthdayyy!
+        </h1>
+
+        <div class="bg-white/90 backdrop-blur rounded-xl p-8 max-w-md shadow-2xl transform translate-y-10 opacity-0 transition-all duration-700 delay-300" id="bday-card">
+            <p class="text-xl text-gray-800 font-pop mb-4">
+                Wait, you didn't actually think I'd make you do work on your birthday? 
+            </p>
+            <p class="text-lg text-gray-600 mb-6" id="custom-message">
+                Forget about the <span id="inserted-major" class="font-bold text-pink-500">Marketing</span> portfolio for a second and celebrate! 🎂
+            </p>
+            <div class="text-4xl">🥳🎁🎈</div>
+            
+            <button onclick="fireConfetti()" class="mt-6 px-6 py-2 bg-gradient-to-r from-pink-500 to-orange-400 text-white rounded-full font-bold shadow-lg hover:scale-105 transition-transform">
+                More Confetti!
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        function startPrank() {
+            const majorSelect = document.getElementById('major-select');
+            const typeSelect = document.getElementById('type-select');
+            
+            // Simple validation to make it feel real
+            if(!majorSelect.value || !typeSelect.value) {
+                alert("Please select all fields to generate the site layout.");
+                return;
+            }
+
+            // 1. Hide fake interface immediately or overlay it? Let's overlay.
+            const loader = document.getElementById('loading-overlay');
+            const progressBar = document.getElementById('progress-bar');
+            const loadingText = document.getElementById('loading-text');
+            
+            loader.classList.remove('hidden');
+            loader.classList.add('flex');
+
+            // 2. Start Progress Bar Animation
+            setTimeout(() => {
+                progressBar.style.width = '100%';
+            }, 100);
+
+            // 3. Cycle through fake loading messages
+            const messages = [
+                "Analyzing major requirements...",
+                "Selecting color palette...",
+                "Drafting layout structure...",
+                "Almost there..."
+            ];
+            
+            let i = 0;
+            const msgInterval = setInterval(() => {
+                if(i < messages.length) {
+                    loadingText.innerText = messages[i];
+                    i++;
+                }
+            }, 800);
+
+            // 4. THE REVEAL (after 3.5 seconds)
+            setTimeout(() => {
+                clearInterval(msgInterval);
+                triggerBirthday(majorSelect.options[majorSelect.selectedIndex].text);
+            }, 3500);
+        }
+
+        function triggerBirthday(majorText) {
+            // Hide fake interface and loader
+            document.getElementById('fake-interface').style.display = 'none';
+            document.getElementById('loading-overlay').style.display = 'none';
+            
+            // Change Background
+            document.getElementById('main-body').classList.add('party-mode');
+            
+            // Show Birthday Content
+            const bdayScreen = document.getElementById('birthday-screen');
+            bdayScreen.classList.remove('hidden');
+            bdayScreen.classList.add('flex');
+
+            // Update text with their major
+            document.getElementById('inserted-major').innerText = majorText;
+
+            // Animate Text In
+            setTimeout(() => {
+                document.getElementById('bday-text').classList.remove('scale-0');
+                
+                const card = document.getElementById('bday-card');
+                card.classList.remove('translate-y-10', 'opacity-0');
+            }, 100);
+
+            // FIRE!
+            fireConfetti();
+            setInterval(fireConfetti, 2500); // Keep firing every few seconds
+        }
+
+        function fireConfetti() {
+            var duration = 2000;
+            var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 100 };
+            var random = function(min, max) { return Math.random() * (max - min) + min; };
+
+            confetti(Object.assign({}, defaults, { particleCount: 50, origin: { x: random(0.1, 0.3), y: Math.random() - 0.2 } }));
+            confetti(Object.assign({}, defaults, { particleCount: 50, origin: { x: random(0.7, 0.9), y: Math.random() - 0.2 } }));
+            confetti({ particleCount: 100, spread: 100, origin: { y: 0.6 } });
+        }
+    </script>
+</body>
+</html>
